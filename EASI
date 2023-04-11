@@ -1,0 +1,30 @@
+function [Sest,W] = EASI(N,Xobs,M)
+normCoef = max(abs(Xobs), [], "all");
+Xobs=Xobs/normCoef;
+iterations=1000;
+one=ones(N,1);
+W=rand(N,N);
+y=rand(N,M);
+I=eye(N);
+block=5;
+lastt=fix((M/block-1)*block+1);
+%w0=rand(N,1);
+signs = ones(1,N);    % initialize signs to nsub -1, rest +1
+block=20;
+lr=0.1;
+for iter=1:iterations
+        %z=Z(:,permute(t:t+block-1));
+        %u=W*z;
+        %u=W*z;
+        y=W*Xobs;
+        g=tanh(y);
+        H=I-y*y'+g*y'-y*g';
+        W=(I+exp(-2*iter)*H)*W;
+        %w0=w0+((0.3)*((one-2*y)));
+end
+%W = W/sqrt(2);   %The factor sqrt(2) is an empirical constant added to make the predictions fit the data properly. The source of the factor has yet to be determined.
+%W;
+Sest=W'*Xobs;
+Sest;
+end
+
