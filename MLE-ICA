@@ -1,0 +1,132 @@
+ 
+N           = 3;       
+C           = N;                     
+M           = 1000;                  
+K           = 1;             
+na          = 12;                       
+ns          = 8;                            
+finalTime   = 50*pi;              
+initialTime = 0*pi;                         
+Amix        = rand(N,N);                
+
+timeVector  = initialTime:(finalTime-initialTime)/(M-1):finalTime;
+source1     = 3*exp(-0.002*timeVector).*sin(7*timeVector);   
+source2     = zeros(1,M);            
+source3     = zeros(1,M);            
+
+periodSource2 = (finalTime-initialTime)/na;
+periodSource3 = (finalTime-initialTime)/ns/2;
+
+for i = 1:M
+    source2(i) = K*timeVector(i)-floor(timeVector(i)/periodSource2)*K*periodSource2;
+end
+
+source2 = source2 - mean(source2);
+
+for i = 1:M
+    if mod(floor(timeVector(i)/periodSource3),2) == 0
+        source3(i) = 1;
+    else
+        source3(i) = -1;
+    end    
+end
+
+source3 = source3 - mean(source3);
+
+S = [source1;source2;source3];
+
+Xobs = Amix*S;                        
+
+figure
+plot(timeVector,source1)                 
+xlabel('time (s)')
+ylabel('Signal Amplitude') 
+legend('source 1')
+
+figure
+plot(timeVector,source2)             
+xlabel('time (s)')
+ylabel('Signal Amplitude') 
+legend('source 2')
+
+figure
+plot(timeVector,source3)               
+xlabel('time (s)')
+ylabel('Signal Amplitude') 
+legend('source 3')
+
+figure
+plot(timeVector,Xobs);                     
+xlabel('time (s)') 
+ylabel('Signal Amplitude')
+legend('Observed Mixture 1', 'Observed Mixture 2', 'Observed Mixture 3')
+
+%% Preprocessing, Centering
+
+X = Xobs';                               
+
+Xmean = mean(X);                         
+
+for i = 1:N
+    X(:,i) = X(:,i) - Xmean(i);            
+end
+
+%% Preprocessing, Whitening
+
+ExxT    = cov(X);                          
+[E,D]   = eig(ExxT);                        
+
+Z = E*1/sqrt(D)*E'*X';                  
+
+
+%% MLE. FastICA algorithm
+B = rand(N);          %1. Randomizing B
+Cr=1/M*(Z*Z');                    
+iterations = 10;    
+for p = 1:iterations
+ y=B*Z;
+for i=1:C
+%disp(y)
+   G  = tanh(y(:,i));
+%disp(G)
+    Gder = 1-tanh(y(:,i)).^2;
+%disp(Gder)
+      Gy =  tanh(y);
+%disp(Gy)
+         beta(:,i)=-1/M*(y(:,i).*G);             %1/N
+           alpha(:,i)=-1/(beta(:,i)+1/M*(Gder));
+%disp(alpha(1,i))
+B=B+diag(alpha(:,i))*((diag(beta(:,i)))+1/M*(Gy*y'))*B;
+B=((B*Cr*B')^(-1/2))*B;
+disp(B)
+end
+end
+%% Output Results
+
+
+Sest = B*Z;
+%% Output Results
+
+B = B/sqrt(2);                              %The factor sqrt(2) is an empirical constant added to make the predictions fit the data properly. The source of the factor has yet to be determined.
+
+B;
+
+Sest = B*Z;
+
+figure
+plot(timeVector, Sest(1,:))
+xlabel('time (s)') 
+ylabel('Signal Amplitude') 
+legend('Source Estimation 1')
+
+figure
+plot(timeVector, Sest(2,:))
+xlabel('time (s)') 
+ylabel('Signal Amplitude') 
+legend('Source Estimation 2')
+
+figure
+plot(timeVector, Sest(3,:))
+xlabel('time (s)')
+ylabel('Signal Amplitude') 
+legend('Source Estimation 3')
