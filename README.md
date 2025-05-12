@@ -1,2 +1,1 @@
-# ASP_ICA
-Algorithms po ICA
+Independent Component Analysis Alogortithms
